@@ -1,0 +1,6 @@
+{
+  "functionClassNameMap": {
+	"Signal": "\\Espo\\Modules\\PollingSignals\\Core\\Formula\\Functions\\SignalType",
+	"signal": "\\Espo\\Modules\\PollingSignals\\Core\\Formula\\Functions\\SignalType"
+  }
+}
