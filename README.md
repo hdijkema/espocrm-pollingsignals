@@ -1,2 +1,2 @@
 # espocrm-pollingsignals
-Polling Signals for EspoCRM
+Polling Signals Module for EspoCRM
