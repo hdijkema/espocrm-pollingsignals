@@ -11,7 +11,7 @@ fi
 
 CMD=$1;
 VERSION=`cat VERSION`
-EXT="polling-signals-extension"
+EXT="pollingsignals-extension"
 NAME="Polling Signals"
 DESCRIPTION="Implements a way to inform the front-end of changes (made by formulas) in the backend"
 MODULE=PollingSignals
