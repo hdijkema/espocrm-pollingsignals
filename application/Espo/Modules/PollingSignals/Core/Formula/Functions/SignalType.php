@@ -73,7 +73,9 @@ class SignalType extends \Espo\Core\Formula\Functions\Base
         	if (isset($_SESSION[$flag_id])) {
 				$_SESSION[$flag_id . "_flagged"] = true;
         	} else {
-				throw new Error("Bad session id '$flag_id'. No signal for that.");
+				# It does not lead to throwing an error, but this is worth a warning.
+                # The signal id is not there, so we can't update anything
+                $GLOBALS['log']->warning("Bad session id '$flag_id'. No signal for that.");
         	}
 		}
 
