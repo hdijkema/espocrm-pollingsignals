@@ -37,6 +37,9 @@ define('pollingsignals:signals', [ ], function () {
 	var _check_id;
 
 	var Signals;
+    var Espo;
+
+    console.log(window.Espo);
 
    	Signals = {
    	    
@@ -53,6 +56,8 @@ define('pollingsignals:signals', [ ], function () {
 			if (this._initialized) return;
 
 			this._initialized = true;
+
+            Espo = window.Espo;
 
     		if (!panel.getConfig().get('useWebSocket')) {
 				// If we can't use websockets, we use our own polling mechanism.
@@ -71,9 +76,9 @@ define('pollingsignals:signals', [ ], function () {
 							tick
 						);
 					window.setInterval(
-							function() {
-								if (window.hd_signals.length > 0) {
-            						Espo.ajax({
+						function() {
+							if (window.hd_signals.length > 0) {
+            					/*$.ajax({
                 						url: '/api/v1/PollingSignals/FlaggedSignals.php',
                 						dataType: 'json',
                 						local: true,
@@ -95,10 +100,31 @@ define('pollingsignals:signals', [ ], function () {
 											});
                 						}
             						});
-								}
-							},
-							interval
-						);
+                                **/
+                			    let url = 'PollingSignals/FlaggedSignals.php';
+								Espo.Ajax
+                                    .getRequest(url)
+                                    .then(data => {
+										data.flagged.forEach(function(id, idx) {
+                                       		 let applies = [];
+                                             window.hd_signals.forEach(
+                                                  function(obj, idx) {
+                                                     if (obj.flag == id) {
+                                                        applies.push(obj);
+                                                     }
+                                                  }
+                                            );
+                                            let f_obj = {
+                                                    flag_id: id,
+                                                    objects: applies
+                                            };
+											flagged_ids.push(f_obj);
+										});
+                                    });
+							}
+						},
+						interval
+					);
 				}
 
 	    		_checkId = function(id, obj, callback) {
@@ -119,14 +145,23 @@ define('pollingsignals:signals', [ ], function () {
 
 				this._internalDeregSig = function(panel, topic, entityType, id) {
 					var flag_id = topic + '.' + entityType + '.' + id;
-					Espo.ajax({
+                    
+					/*$.ajax({
 						url: '/api/v1/PollingSignals/DeregisterSignal.php?id=' + flag_id,
 						dataType: 'json',
 						local: true,
 						success: function(data) {
 							// does nothing
 						}
-					});
+					});*/
+
+				    let url = 'PollingSignals/DeregisterSignal.php?id=' + flag_id;
+                    Espo.Ajax
+                        .getRequest(url)
+                        .then(data => { 
+                            // does nothing
+                        });
+
 					window.hd_signals = window.hd_signals.filter(function(obj, idx) {
 																	var id = obj.flag;
 																	return flag_id != id; 
@@ -135,7 +170,7 @@ define('pollingsignals:signals', [ ], function () {
 
 				this._internalRegSig = function (panel, topic, entityType, id, callback, poll_seconds = 1) {
 					var flag_id = topic + '.' + entityType + '.' + id;
-					Espo.ajax({
+					/*$.ajax({
                			url: '/api/v1/PollingSignals/RegisterSignal.php?id=' + flag_id,
                			dataType: 'json',
                			local: true,
@@ -156,7 +191,29 @@ define('pollingsignals:signals', [ ], function () {
 							};
 							window.hd_signals.push(obj);
 						}
-					});
+					});*/
+                    
+               		let url = 'PollingSignals/RegisterSignal.php?id=' + flag_id;
+                    Espo.Ajax
+                        .getRequest(url)
+                        .then(data => {
+							let seconds = poll_seconds;
+							if (poll_seconds < 1) { seconds = 1; }
+							let _mseconds = seconds * 1000;
+							let _ticks = 0;
+							let obj = {
+								flag: flag_id,
+								cb: function(ms) {
+										_ticks += ms;
+										if (_ticks >= _mseconds) {
+											_ticks = 0;
+											_checkId(flag_id, obj, callback);
+										}
+									}
+							};
+							window.hd_signals.push(obj);
+                        });
+
 					var me = this;
 					panel.once('remove', function() { 
 						me._deregisterSignal(panel, topic, entityType, id);
