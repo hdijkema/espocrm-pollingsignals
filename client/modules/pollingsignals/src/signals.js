@@ -1,13 +1,13 @@
 /************************************************************************
  * vi: set sw=4 ts=4: 
  *
- * This file is part of EspoSignals.
+ * This file is part of Extension 'EspoCRM Polling Signals'.
  *
- * EspoSignals - Extension to EspoCRM, an Open Source CRM application.
+ * 'EspoCRM Polling Signals' - Extension to EspoCRM, an Open Source CRM application.
  * Copyright (C) 2020 Hans Dijkema
- * Website: https://github.com/hdijkema/espocrm
+ * Website: https://github.com/hdijkema/espocrm-pollingsignals
  *
- * EspoSignals is free software: you can redistribute it and/or modify
+ * 'EspoCRM Polling Signals' is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -25,7 +25,8 @@
  * Section 5 of the GNU General Public License version 3.
  *
  * In accordance with Section 7(b) of the GNU General Public License version 3,
- * these Appropriate Legal Notices must retain the display of the "EspoSignals" word.
+ * these Appropriate Legal Notices must retain the display of the 
+ * 'EspoCRM Polling Signals' phrase.
  ************************************************************************/
 
 define('pollingsignals:signals', [ ], function () {
@@ -72,7 +73,7 @@ define('pollingsignals:signals', [ ], function () {
 					window.setInterval(
 							function() {
 								if (window.hd_signals.length > 0) {
-            						$.ajax({
+            						Espo.ajax({
                 						url: '/api/v1/PollingSignals/FlaggedSignals.php',
                 						dataType: 'json',
                 						local: true,
@@ -118,7 +119,7 @@ define('pollingsignals:signals', [ ], function () {
 
 				this._internalDeregSig = function(panel, topic, entityType, id) {
 					var flag_id = topic + '.' + entityType + '.' + id;
-					$.ajax({
+					Espo.ajax({
 						url: '/api/v1/PollingSignals/DeregisterSignal.php?id=' + flag_id,
 						dataType: 'json',
 						local: true,
@@ -134,7 +135,7 @@ define('pollingsignals:signals', [ ], function () {
 
 				this._internalRegSig = function (panel, topic, entityType, id, callback, poll_seconds = 1) {
 					var flag_id = topic + '.' + entityType + '.' + id;
-					$.ajax({
+					Espo.ajax({
                			url: '/api/v1/PollingSignals/RegisterSignal.php?id=' + flag_id,
                			dataType: 'json',
                			local: true,

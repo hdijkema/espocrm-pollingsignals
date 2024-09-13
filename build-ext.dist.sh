@@ -31,7 +31,7 @@ MODULE=$6
 CDIR=`pwd`
 BUILD_DIR="$CDIR/build"
 
-DIRS="application client custom api"
+DIRS="application client custom public/api"
 TARDIRS=""
 for D in $DIRS
 do
