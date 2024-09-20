@@ -90,7 +90,7 @@ define('pollingsignals:signals', [ ], function () {
                             } else {
                                alive_info_count = alive_info;
                                alive_count += 1;
-                               console.log('Still checking for signals. Registered signal count: ', window.hd_signals.length);
+                               console.log('Still checking for signals. Number of registered signals: ', window.hd_signals.length, ' alive count: ', alive_count);
                             }
 							if (window.hd_signals.length > 0) {
                 			    let url = 'PollingSignals/FlaggedSignals.php?session_id=' + this._session_id;

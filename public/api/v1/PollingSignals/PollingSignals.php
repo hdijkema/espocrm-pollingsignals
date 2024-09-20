@@ -35,6 +35,13 @@ const APCU_PS_SESSIONS = '__$_polling_signals_espocrm_sessions_%__';
 
 class PollingSignals
 {
+   private $DEBUG = true;
+
+   private function log($msg)
+   {
+      if ($this->DEBUG) { error_log($msg); }
+   }
+
    private function checkAPCU()
    {
        $has_apcu = false;
@@ -101,9 +108,10 @@ class PollingSignals
 
        $signals[$id] = true;
        apcu_store($apcu_sess, $signals, 3600);
-   
-       error_log('PollingSignals: id ' . $id . ' apcu stored = ' . $id_ok . ' for session ' . $session_id);
-       error_log('PollingSignals: flagged = ' . $flag_value . ' for ' . $id . ' apcu stored = ' . $flag_ok . ' for session ' . $session_id);
+  
+       
+       $this->log('PollingSignals: id ' . $id . ' apcu stored = ' . $id_ok . ' for session ' . $session_id);
+       $this->log('PollingSignals: flagged = ' . $flag_value . ' for ' . $id . ' apcu stored = ' . $flag_ok . ' for session ' . $session_id);
 
        return $key_new;
    }
@@ -155,7 +163,7 @@ class PollingSignals
        foreach($signals as $id => $value) {
           array_push($sigs, $id);
        }
-       error_log('Signals for session_id = ' . $session_id . ': ' . json_encode($sigs));
+       $this->log('Signals for session_id = ' . $session_id . ': ' . json_encode($sigs));
 
        foreach($signals as $id => $value) {
           $key = $session_id . '|' . $id;
@@ -170,7 +178,7 @@ class PollingSignals
           }
        }
 
-       error_log('Flagged signals: ' . json_encode($flagged));
+       $this->log('Flagged signals: ' . json_encode($flagged));
 
        return $flagged;
     }
