@@ -10,5 +10,7 @@ To make PollingsSignals work in a portal configuration, add a rewrite rule to yo
         RewriteRule "/api/v1/.*/PollingSignals/(.*)"    "/api/v1/PollingSignals/$1"     [L]
 `````
 
+## Requirements
 
+PHP APCu needs to be installed and enabled.
 
