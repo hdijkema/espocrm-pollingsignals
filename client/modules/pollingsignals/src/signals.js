@@ -32,14 +32,13 @@
 define('pollingsignals:signals', [ ], function () {
 
 	var flagged_ids = [];
-	var interval = 1000;
+	var interval = 2000;	// 2 seconds
+    var alive_info = 10;	// every tenth call we signal that we're alive. 
 
 	var _check_id;
 
 	var Signals;
     var Espo;
-
-    console.log(window.Espo);
 
    	Signals = {
    	    
@@ -56,6 +55,13 @@ define('pollingsignals:signals', [ ], function () {
 			if (this._initialized) return;
 
 			this._initialized = true;
+
+            if (window.hd_session_id) {
+               this._session_id = window.hd_session_id;
+            } else {
+               this._session_id = "id" + Math.random().toString(16).slice(2);
+               window.hd_session_id = this._session_id;
+            }
 
             Espo = window.Espo;
 
@@ -75,36 +81,25 @@ define('pollingsignals:signals', [ ], function () {
 							},
 							tick
 						);
+                    let alive_count = 0;
+                    let alive_info_count = alive_info;
 					window.setInterval(
 						function() {
+                            if (alive_info_count > 0) {
+                               alive_info_count -= 1;
+                            } else {
+                               alive_info_count = alive_info;
+                               alive_count += 1;
+                               console.log('Still checking for signals. Registered signal count: ', window.hd_signals.length);
+                            }
 							if (window.hd_signals.length > 0) {
-            					/*$.ajax({
-                						url: '/api/v1/PollingSignals/FlaggedSignals.php',
-                						dataType: 'json',
-                						local: true,
-                						success: function(data) {
-											data.flagged.forEach(function(id, idx) {
-                                                var applies = [];
-                                                window.hd_signals.forEach(
-                                                   function(obj, idx) {
-                                                      if (obj.flag == id) {
-                                                         applies.push(obj);
-                                                      }
-                                                   }
-                                                );
-                                                var f_obj = {
-                                                    flag_id: id,
-                                                    objects: applies
-                                                };
-												flagged_ids.push(f_obj);
-											});
-                						}
-            						});
-                                **/
-                			    let url = 'PollingSignals/FlaggedSignals.php';
+                			    let url = 'PollingSignals/FlaggedSignals.php?session_id=' + this._session_id;
 								Espo.Ajax
                                     .getRequest(url)
                                     .then(data => {
+                                        if (data.flagged.length > 0) {
+                                           console.log('flagged data: ', data.flagged);
+                                        }
 										data.flagged.forEach(function(id, idx) {
                                        		 let applies = [];
                                              window.hd_signals.forEach(
@@ -122,7 +117,7 @@ define('pollingsignals:signals', [ ], function () {
 										});
                                     });
 							}
-						},
+						}.bind(this),
 						interval
 					);
 				}
@@ -145,17 +140,8 @@ define('pollingsignals:signals', [ ], function () {
 
 				this._internalDeregSig = function(panel, topic, entityType, id) {
 					var flag_id = topic + '.' + entityType + '.' + id;
-                    
-					/*$.ajax({
-						url: '/api/v1/PollingSignals/DeregisterSignal.php?id=' + flag_id,
-						dataType: 'json',
-						local: true,
-						success: function(data) {
-							// does nothing
-						}
-					});*/
 
-				    let url = 'PollingSignals/DeregisterSignal.php?id=' + flag_id;
+				    let url = 'PollingSignals/DeregisterSignal.php?id=' + flag_id + '&session_id=' + this._session_id;
                     Espo.Ajax
                         .getRequest(url)
                         .then(data => { 
@@ -168,32 +154,19 @@ define('pollingsignals:signals', [ ], function () {
 																});
 				};
 
-				this._internalRegSig = function (panel, topic, entityType, id, callback, poll_seconds = 1) {
+				this._internalRegSig = function (panel, topic, entityType, id, callback, poll_seconds = 2) {
 					var flag_id = topic + '.' + entityType + '.' + id;
-					/*$.ajax({
-               			url: '/api/v1/PollingSignals/RegisterSignal.php?id=' + flag_id,
-               			dataType: 'json',
-               			local: true,
-               			success: function(data) {
-							var seconds = poll_seconds;
-							if (poll_seconds < 1) { seconds = 1; }
-							var _mseconds = seconds * 1000;
-							var _ticks = 0;
-							var obj = {
-								flag: flag_id,
-								cb: function(ms) {
-										_ticks += ms;
-										if (_ticks >= _mseconds) {
-											_ticks = 0;
-											_checkId(flag_id, obj, callback);
-										}
-									}
-							};
-							window.hd_signals.push(obj);
-						}
-					});*/
-                    
-               		let url = 'PollingSignals/RegisterSignal.php?id=' + flag_id;
+
+                    let has_id = false;
+                    window.hd_signals.forEach(function(obj) {
+                        if (obj.flag == flag_id) { has_id = true; }
+                    });
+
+                    if (has_id) { 
+                       this._deregisterSignal(panel, topic, entityType, id);
+                    }
+
+               		let url = 'PollingSignals/RegisterSignal.php?id=' + flag_id + '&session_id=' + this._session_id;
                     Espo.Ajax
                         .getRequest(url)
                         .then(data => {
@@ -214,8 +187,9 @@ define('pollingsignals:signals', [ ], function () {
 							window.hd_signals.push(obj);
                         });
 
-					var me = this;
+					let me = this;
 					panel.once('remove', function() { 
+                        console.log('Removing previous registered signal for topic ', topic, ' entity type ', entityType, ' and id ', id);
 						me._deregisterSignal(panel, topic, entityType, id);
 					});
 				};
@@ -227,7 +201,8 @@ define('pollingsignals:signals', [ ], function () {
 					panel.getHelper().webSocketManager.unsubscribe(flag_id);
 				};
 
-				this._internalRegSig = function(panel, topic, entityType, id, callback, poll_seconds = 1) {
+                let me = this;
+				this._internalRegSig = function(panel, topic, entityType, id, callback, poll_seconds = 2) {
 					var flag_id = topic + '.' + entityType + '.' + id;
 					panel.streamUpdateWebSocketTopic = flag_id;
 					panel.getHelper().webSocketManager.subscribe(flag_id, 
@@ -236,7 +211,7 @@ define('pollingsignals:signals', [ ], function () {
 															 	}
 																);
 					panel.once('remove', function() {
-						this._deregisterSignal(panel, topic, entityType, id);
+						me._deregisterSignal(panel, topic, entityType, id);
 					});
 				};
 			}

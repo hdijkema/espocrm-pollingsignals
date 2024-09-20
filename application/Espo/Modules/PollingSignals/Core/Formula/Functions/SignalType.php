@@ -35,16 +35,30 @@ namespace Espo\Modules\PollingSignals\Core\Formula\Functions;
 use \Espo\ORM\Entity;
 use \Espo\Core\Exceptions\Error;
 
+require_once(__DIR__ . '/../../../../../../../public/api/v1/PollingSignals/PollingSignals.php');
+
 class SignalType extends \Espo\Core\Formula\Functions\Base
 {
+
+    private $ps = null;
+
+    private function initPollingSignals()
+    {
+       if ($this->ps == null) { 
+           $this->ps = createPollingSignals();
+       }
+    }
+
     protected function init()
     {
         $this->addDependency('config');
+        $this->initPollingSignals();
     }
-
 
     public function process(\StdClass $item)
     {
+        $this->initPollingSignals();
+
         if (!property_exists($item, 'value')) {
             return true;
         }
@@ -70,14 +84,7 @@ class SignalType extends \Espo\Core\Formula\Functions\Base
 			$data = (object) [ 'flag_id' => $flag_id ];
 			$this->getInjection('webSocketSubmission')->submit($flag_id, null, $data);
 		} else {
-			session_start();
-        	if (isset($_SESSION[$flag_id])) {
-				$_SESSION[$flag_id . "_flagged"] = true;
-        	} else {
-				# It does not lead to throwing an error, but this is worth a warning.
-                # The signal id is not there, so we can't update anything
-                $GLOBALS['log']->warning("Bad session id '$flag_id'. No signal for that.");
-        	}
+            $this->ps->flagPollingSignal($flag_id);
 		}
 
 		return $flag_id;

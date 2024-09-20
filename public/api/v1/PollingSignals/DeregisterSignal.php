@@ -30,21 +30,24 @@
  * 'EspoCRM Polling Signals' phrase.
  ************************************************************************/
 
+require_once('PollingSignals.php');
+
 $obj = (object)[];
 
-session_start();
-
-if (isset($_GET['id'])) {
+if (isset($_GET['id']) && isset($_GET['session_id'])) {
 	$id = $_GET['id'];
-	if (isset($_SESSION[$id])) {
+    $session_id = $_GET['session_id'];
+
+    $ps = new PollingSignals();
+    $cleared = $ps->clearPollingSignal($id, $session_id);
+
+	if ($cleared) {
 		$obj->ok = true;
 		$obj->status = 'cleared';
 	} else {
 		$obj->ok = false;
 		$obj->status = 'not there';
 	}
-	unset($_SESSION[$id]);
-	unset($_SESSION[$id . "_flagged"]);
 } else {
 	$obj->ok = false;
 }

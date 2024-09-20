@@ -30,21 +30,27 @@
  * 'EspoCRM Polling Signals' phrase.
  ************************************************************************/
 
+require_once('PollingSignals.php');
+
 $obj = (object)[];
 
-session_start();
-
-if (isset($_GET['id'])) {
+if (isset($_GET['id']) && isset($_GET['session_id'])) {
 	$obj->ok = true;
 	$id = $_GET['id'];
-	if (isset($_SESSION[$id])) {
-		$obj->status = 'overwritten';
-	} else {
+    $session_id = $_GET['session_id'];
+
+    error_log('RegisterSignal: id = ' . $id . ', session_id = ' . $session_id);
+
+    $ps = new PollingSignals();
+    $key_new = $ps->setPollingSignal($id, $session_id);
+
+	if ($key_new) {
 		$obj->status = 'new';
+	} else {
+		$obj->status = 'overwritten';
 	}
-	$_SESSION[$id] = true;
-	$_SESSION[$id . "_flagged"] = false;
 } else {
+    error_log('RegisterSignal: no id or session_id given');
 	$obj->ok = false;
 }
 

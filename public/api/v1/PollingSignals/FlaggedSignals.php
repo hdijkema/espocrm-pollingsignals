@@ -30,19 +30,16 @@
  * 'EspoCRM Polling Signals' phrase.
  ************************************************************************/
 
-session_start();
+require_once('PollingSignals.php');
 
-$flagged = array();
-
-foreach($_SESSION as $id => $value) {
-	$idx = strpos($id, '_flagged');
-	if ($idx > 0) {
-		if ($_SESSION[$id]) {
-			$_SESSION[$id] = false;
-			array_push($flagged, substr($id, 0, $idx));
-		}
-	}
+if (isset($_GET['session_id'])) {
+   $session_id = $_GET['session_id'];
+} else {
+   $session_id = 'null';
 }
+
+$ps = new PollingSignals();
+$flagged = $ps->getFlaggedSignals($session_id);
 
 $obj = (object)[];
 $obj->flagged = $flagged;
