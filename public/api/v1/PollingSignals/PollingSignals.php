@@ -54,7 +54,7 @@ class PollingSignals
        }
 
        if (!$has_apcu) {
-          throw 'PollingSignals requires PHP APCU';
+          throw new \RuntimeException('PollingSignals requires PHP APCu');
        }
    }
 
