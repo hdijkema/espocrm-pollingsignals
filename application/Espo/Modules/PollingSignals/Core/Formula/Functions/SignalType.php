@@ -32,61 +32,55 @@
 
 namespace Espo\Modules\PollingSignals\Core\Formula\Functions;
 
-use \Espo\ORM\Entity;
-use \Espo\Core\Exceptions\Error;
+use Espo\Core\Exceptions\Error;
+use Espo\Core\Formula\EvaluatedArgumentList;
+use Espo\Core\Formula\Func;
+use Espo\Core\Utils\Config;
+use Espo\Core\WebSocket\Submission as WebSocketSubmission;
 
 require_once(__DIR__ . '/../../../../../../../public/api/v1/PollingSignals/PollingSignals.php');
 
-class SignalType extends \Espo\Core\Formula\Functions\Base
+class SignalType implements Func
 {
+    private ?\PollingSignals $pollingSignals = null;
 
-    private $ps = null;
+    public function __construct(
+        private Config $config,
+        private WebSocketSubmission $webSocketSubmission
+    ) {}
 
-    private function initPollingSignals()
+    private function getPollingSignals(): \PollingSignals
     {
-       if ($this->ps == null) { 
-           $this->ps = createPollingSignals();
-       }
+        if ($this->pollingSignals === null) {
+            $this->pollingSignals = createPollingSignals();
+        }
+
+        return $this->pollingSignals;
     }
 
-    protected function init()
+    public function process(EvaluatedArgumentList $arguments): mixed
     {
-        $this->addDependency('config');
-        $this->initPollingSignals();
-    }
-
-    public function process(\StdClass $item)
-    {
-        $this->initPollingSignals();
-
-        if (!property_exists($item, 'value')) {
+        if (count($arguments) === 0) {
             return true;
         }
 
-        if (!is_array($item->value)) {
-            throw new Error('Value for \'Signal\' item is not array.');
+        if (count($arguments) < 3) {
+            throw new Error('Bad value for \'Signal\' item.');
         }
 
-        if (count($item->value) < 3) {
-             throw new Error('Bad value for \'Signal\' item.');
+        $topic = $arguments[0];
+        $entityType = $arguments[1];
+        $id = $arguments[2];
+
+        $flagId = "$topic.$entityType.$id";
+
+        if ($this->config->get('useWebSocket')) {
+            $data = (object) ['flag_id' => $flagId];
+            $this->webSocketSubmission->submit($flagId, null, $data);
+        } else {
+            $this->getPollingSignals()->flagPollingSignal($flagId);
         }
 
-		$topic = $this->evaluate($item->value[0]);
-		$entityType = $this->evaluate($item->value[1]);
-		$id = $this->evaluate($item->value[2]);
-
-		$flag_id = "$topic.$entityType.$id";
-        
-		$config = $this->getInjection('config');
-		$web_socket = $config->get('useWebSocket');
-
-		if ($web_socket) {
-			$data = (object) [ 'flag_id' => $flag_id ];
-			$this->getInjection('webSocketSubmission')->submit($flag_id, null, $data);
-		} else {
-            $this->ps->flagPollingSignal($flag_id);
-		}
-
-		return $flag_id;
+        return $flagId;
     }
 }
